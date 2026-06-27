@@ -1,0 +1,36 @@
+name: Force iOS SPM Migration
+on:
+  workflow_dispatch: # Allows you to trigger this manually from the GitHub UI
+
+permissions:
+  contents: write
+
+jobs:
+  migrate-xcode:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref }} # Check out the branch you trigger it on
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.44.0'
+          channel: 'stable'
+
+      - name: Run SPM Migration
+        run: |
+          flutter clean
+          flutter pub get
+          flutter build ios --config-only
+
+      - name: Commit and Push Xcode Updates
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add ios/Runner.xcodeproj/project.pbxproj
+          git add ios/Runner.xcworkspace/contents.xcworkspacedata
+          git commit -m "chore: auto-migrate Xcode project to Swift Package Manager" || echo "No changes to commit"
+          git push
